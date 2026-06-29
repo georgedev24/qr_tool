@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import QRCodeStyling from 'qr-code-styling'
 import TypePanel from './components/TypePanel'
 import StylePanel from './components/StylePanel'
@@ -62,18 +62,52 @@ const DEFAULT_DATA = {
   crypto:   { coin: 'bitcoin', address: '', amount: '' },
 }
 
+const baseName = (p) => p.replace(/\\/g, '/').split('/').pop()
+
 export default function App() {
   const [activeType, setActiveType] = useState('wifi')
   const [formData, setFormData] = useState(DEFAULT_DATA)
   const [style, setStyle] = useState(DEFAULT_STYLE)
   const [logoDataUrl, setLogoDataUrl] = useState(null)
-  const [previewSize, setPreviewSize] = useState(220)
+  const [previewSize] = useState(220)
   const [showCardModal, setShowCardModal] = useState(false)
-  const [updateState, setUpdateState] = useState(null) // 'available' | 'downloaded'
+  const [updateState, setUpdateState] = useState(null)
+  const [projectPath, setProjectPath] = useState(null)
+  const [isDirty, setIsDirty] = useState(false)
 
   const qrRef = useRef(null)
   const qrInstance = useRef(null)
-  const containerRef = useRef(null)
+
+  // Refs for stable access inside event handlers
+  const activeTypeRef = useRef(activeType)
+  const formDataRef = useRef(formData)
+  const styleRef = useRef(style)
+  const logoDataUrlRef = useRef(logoDataUrl)
+  const projectPathRef = useRef(null)
+  const isDirtyRef = useRef(false)
+  const loadingRef = useRef(false)
+  const mountedRef = useRef(false)
+
+  useEffect(() => { activeTypeRef.current = activeType }, [activeType])
+  useEffect(() => { formDataRef.current = formData }, [formData])
+  useEffect(() => { styleRef.current = style }, [style])
+  useEffect(() => { logoDataUrlRef.current = logoDataUrl }, [logoDataUrl])
+  useEffect(() => { projectPathRef.current = projectPath }, [projectPath])
+  useEffect(() => { isDirtyRef.current = isDirty }, [isDirty])
+
+  // Dirty tracking  -  skip initial render and project loads
+  useEffect(() => {
+    if (!mountedRef.current) { mountedRef.current = true; return }
+    if (loadingRef.current) return
+    setIsDirty(true)
+  }, [activeType, formData, style, logoDataUrl])
+
+  // Window title
+  useEffect(() => {
+    if (!window.electronAPI) return
+    const name = projectPath ? baseName(projectPath) : 'Untitled'
+    window.electronAPI.setTitle(`${name}${isDirty ? ' ●' : ''}  -  QR Tool`)
+  }, [projectPath, isDirty])
 
   const qrData = buildQrData(activeType, formData[activeType])
 
@@ -90,7 +124,7 @@ export default function App() {
     }
   }, [])
 
-  const updateQr = useCallback(() => {
+  useEffect(() => {
     if (!qrInstance.current) return
     qrInstance.current.update({
       ...style,
@@ -101,15 +135,118 @@ export default function App() {
     })
   }, [style, qrData, logoDataUrl, previewSize])
 
-  useEffect(() => {
-    updateQr()
-  }, [updateQr])
-
+  // Auto-updater
   useEffect(() => {
     if (!window.electronAPI) return
     const offAvailable = window.electronAPI.onUpdateAvailable(() => setUpdateState('available'))
     const offDownloaded = window.electronAPI.onUpdateDownloaded(() => setUpdateState('downloaded'))
     return () => { offAvailable?.(); offDownloaded?.() }
+  }, [])
+
+  // --- Project helpers ---
+  const getProjectData = () => ({
+    version: '1',
+    activeType: activeTypeRef.current,
+    formData: formDataRef.current,
+    style: styleRef.current,
+    logoDataUrl: logoDataUrlRef.current,
+  })
+
+  const doSave = async (saveAs = false) => {
+    if (!window.electronAPI) return false
+    const filePath = saveAs ? null : projectPathRef.current
+    const result = await window.electronAPI.saveProject({ data: getProjectData(), filePath })
+    if (result?.success) {
+      setProjectPath(result.filePath)
+      projectPathRef.current = result.filePath
+      setIsDirty(false)
+      isDirtyRef.current = false
+      return true
+    }
+    return false
+  }
+
+  const doLoad = (data, filePath) => {
+    loadingRef.current = true
+    setActiveType(data.activeType || 'wifi')
+    setFormData(data.formData || DEFAULT_DATA)
+    setStyle(data.style || DEFAULT_STYLE)
+    setLogoDataUrl(data.logoDataUrl || null)
+    setProjectPath(filePath)
+    setIsDirty(false)
+    projectPathRef.current = filePath
+    isDirtyRef.current = false
+    requestAnimationFrame(() => { loadingRef.current = false })
+  }
+
+  const confirmAndProceed = async () => {
+    if (!isDirtyRef.current) return true
+    const response = await window.electronAPI.confirmUnsaved()
+    if (response === 0) { // Save
+      const saved = await doSave()
+      return saved
+    }
+    if (response === 1) return true // Don't Save
+    return false // Cancel
+  }
+
+  // Ref-stable handlers for menu and close events
+  const handleNewRef = useRef(null)
+  const handleOpenRef = useRef(null)
+  const handleSaveRef = useRef(null)
+  const handleSaveAsRef = useRef(null)
+
+  handleNewRef.current = async () => {
+    const proceed = await confirmAndProceed()
+    if (!proceed) return
+    loadingRef.current = true
+    setActiveType('wifi')
+    setFormData(DEFAULT_DATA)
+    setStyle(DEFAULT_STYLE)
+    setLogoDataUrl(null)
+    setProjectPath(null)
+    setIsDirty(false)
+    projectPathRef.current = null
+    isDirtyRef.current = false
+    requestAnimationFrame(() => { loadingRef.current = false })
+  }
+
+  handleOpenRef.current = async () => {
+    const proceed = await confirmAndProceed()
+    if (!proceed) return
+    const result = await window.electronAPI.openProject()
+    if (result) doLoad(result.data, result.filePath)
+  }
+
+  handleSaveRef.current = () => doSave(false)
+  handleSaveAsRef.current = () => doSave(true)
+
+  // Menu event listeners
+  useEffect(() => {
+    if (!window.electronAPI) return
+    const offs = [
+      window.electronAPI.onMenuNew(() => handleNewRef.current?.()),
+      window.electronAPI.onMenuOpen(() => handleOpenRef.current?.()),
+      window.electronAPI.onMenuSave(() => handleSaveRef.current?.()),
+      window.electronAPI.onMenuSaveAs(() => handleSaveAsRef.current?.()),
+    ]
+    return () => offs.forEach(off => off?.())
+  }, [])
+
+  // Window close (unsaved changes guard)
+  useEffect(() => {
+    if (!window.electronAPI) return
+    const off = window.electronAPI.onCloseRequested(async () => {
+      if (!isDirtyRef.current) { window.electronAPI.forceQuit(); return }
+      const response = await window.electronAPI.confirmUnsaved()
+      if (response === 0) {
+        const saved = await doSave()
+        if (saved) window.electronAPI.forceQuit()
+      } else if (response === 1) {
+        window.electronAPI.forceQuit()
+      }
+    })
+    return () => off?.()
   }, [])
 
   const handleDataChange = (field, value) => {
@@ -179,7 +316,7 @@ export default function App() {
     <div className="app-shell">
       {updateState === 'downloaded' && (
         <div className="update-banner update-banner-ready">
-          Update ready to install  - 
+          Update ready to install  -
           <button onClick={() => window.electronAPI?.restartAndInstall()}>
             Restart &amp; Install
           </button>
@@ -191,7 +328,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="app-body" ref={containerRef}>
+      <div className="app-body">
         <TypePanel
           types={QR_TYPES}
           activeType={activeType}
