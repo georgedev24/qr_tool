@@ -10,7 +10,6 @@
   grid-template-columns: var(--panel-width-left) 1fr var(--panel-width-right);
   flex: 1;
   overflow: hidden;
-  border-top: 1px solid var(--border);
 }
 
 /* Preview center */

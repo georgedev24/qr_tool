@@ -10,8 +10,7 @@ function createWindow() {
     height: 720,
     minWidth: 900,
     minHeight: 600,
-    frame: false,
-    titleBarStyle: 'hiddenInset',
+    icon: path.join(__dirname, '../public/icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -48,16 +47,3 @@ ipcMain.handle('save-file', async (event, { buffer, defaultName, filters }) => {
   return { success: true, filePath }
 })
 
-ipcMain.handle('window-minimize', () => {
-  BrowserWindow.getFocusedWindow()?.minimize()
-})
-
-ipcMain.handle('window-maximize', () => {
-  const win = BrowserWindow.getFocusedWindow()
-  if (win?.isMaximized()) win.unmaximize()
-  else win?.maximize()
-})
-
-ipcMain.handle('window-close', () => {
-  BrowserWindow.getFocusedWindow()?.close()
-})

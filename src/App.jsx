@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import QRCodeStyling from 'qr-code-styling'
-import Titlebar from './components/Titlebar'
 import TypePanel from './components/TypePanel'
 import StylePanel from './components/StylePanel'
 import ExportBar from './components/ExportBar'
@@ -163,7 +162,6 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Titlebar />
       <div className="app-body">
         <TypePanel
           types={QR_TYPES}
