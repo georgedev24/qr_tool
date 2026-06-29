@@ -58,6 +58,26 @@
   border: 1px solid var(--border);
 }
 
+.qr-generate-btn {
+  padding: 8px 28px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.18);
+  transition: background 0.1s, transform 0.1s;
+}
+.qr-generate-btn:hover {
+  background: var(--accent-hover, #1a6bbf);
+  transform: translateY(-1px);
+}
+.qr-generate-btn:active {
+  transform: translateY(0);
+}
+
 .update-banner {
   display: flex;
   align-items: center;

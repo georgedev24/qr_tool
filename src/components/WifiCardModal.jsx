@@ -3,34 +3,29 @@ import QRCodeStyling from 'qr-code-styling'
 import { generateWifiCardHtml, TEMPLATES } from '../lib/wifiCardTemplate'
 import './WifiCardModal.css'
 
-const DEFAULT_ACCENTS = {
-  elegant: '#C8972A',
-  clean:   '#2563eb',
-  bold:    '#1a1a2e',
-  minimal: '#111111',
+export const DEFAULT_CARD_SETTINGS = {
+  template:    'elegant',
+  name:        '',
+  tagline:     '',
+  accentColor: '#C8972A',
+  bgColor:     '#1A1810',
+  lang:        'en',
 }
 
-const DEFAULT_BGS = {
-  elegant: '#1A1810',
-  clean:   '#ffffff',
-  bold:    '#1a1a2e',
-  minimal: '#ffffff',
-}
+const DEFAULT_ACCENTS = { elegant: '#C8972A', clean: '#2563eb', bold: '#1a1a2e', minimal: '#111111' }
+const DEFAULT_BGS     = { elegant: '#1A1810', clean: '#ffffff', bold: '#1a1a2e', minimal: '#ffffff' }
 
-export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl, qrData }) {
-  const [template, setTemplate]     = useState('elegant')
-  const [name, setName]             = useState('')
-  const [tagline, setTagline]       = useState('')
-  const [accentColor, setAccentColor] = useState(DEFAULT_ACCENTS.elegant)
-  const [bgColor, setBgColor]       = useState(DEFAULT_BGS.elegant)
-  const [lang, setLang]             = useState('en')
-  const [qrDataUrl, setQrDataUrl]   = useState('')
-  const [saving, setSaving]         = useState(false)
+export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl, qrData, settings, onSettingsChange }) {
+  const s = settings || DEFAULT_CARD_SETTINGS
+  const set = (key, val) => onSettingsChange({ ...s, [key]: val })
+
+  const [qrDataUrl, setQrDataUrl] = useState('')
+  const [saving, setSaving]       = useState(false)
   const iframeRef = useRef(null)
 
-  const currentTpl = TEMPLATES.find(t => t.id === template) || TEMPLATES[0]
+  const currentTpl = TEMPLATES.find(t => t.id === s.template) || TEMPLATES[0]
 
-  // Regenerate QR whenever template changes (different bg colour) or qrData changes
+  // Regenerate card QR whenever template or source QR data changes
   useEffect(() => {
     let cancelled = false
     async function genQr() {
@@ -51,30 +46,30 @@ export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl,
     }
     genQr()
     return () => { cancelled = true }
-  }, [qrData, qrStyle, logoDataUrl, template])
+  }, [qrData, qrStyle, logoDataUrl, s.template])
 
-  // Reset accent colour to a sensible default when switching templates
   const handleTemplateChange = (id) => {
-    setTemplate(id)
-    setAccentColor(DEFAULT_ACCENTS[id] || '#333333')
-    setBgColor(DEFAULT_BGS[id] || '#ffffff')
+    onSettingsChange({
+      ...s,
+      template:    id,
+      accentColor: DEFAULT_ACCENTS[id] || '#333333',
+      bgColor:     DEFAULT_BGS[id]     || '#ffffff',
+    })
   }
 
   const html = generateWifiCardHtml({
-    template,
-    name,
-    tagline,
+    template:    s.template,
+    name:        s.name,
+    tagline:     s.tagline,
     networkName: wifiData?.ssid || '',
-    accentColor,
-    bgColor,
+    accentColor: s.accentColor,
+    bgColor:     s.bgColor,
     qrDataUrl,
-    lang,
+    lang:        s.lang,
   })
 
   useEffect(() => {
-    if (iframeRef.current) {
-      iframeRef.current.srcdoc = html
-    }
+    if (iframeRef.current) iframeRef.current.srcdoc = html
   }, [html])
 
   const handleSave = async () => {
@@ -85,7 +80,7 @@ export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl,
       if (pdfBuffer) {
         await window.electronAPI.saveFile({
           buffer: pdfBuffer,
-          defaultName: `wifi-card${name ? '-' + name.toLowerCase().replace(/\s+/g, '-') : ''}.pdf`,
+          defaultName: `wifi-card${s.name ? '-' + s.name.toLowerCase().replace(/\s+/g, '-') : ''}.pdf`,
           filters: [{ name: 'PDF Document', extensions: ['pdf'] }],
         })
       }
@@ -116,14 +111,13 @@ export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl,
 
           <div className="wcm-fields">
 
-            {/* Template picker */}
             <div className="wcm-field-group">
               <label className="wcm-label">Template</label>
               <div className="wcm-template-grid">
                 {TEMPLATES.map(tpl => (
                   <button
                     key={tpl.id}
-                    className={`wcm-tpl-btn ${template === tpl.id ? 'active' : ''}`}
+                    className={`wcm-tpl-btn ${s.template === tpl.id ? 'active' : ''}`}
                     onClick={() => handleTemplateChange(tpl.id)}
                   >
                     <span className={`wcm-tpl-swatch wcm-tpl-swatch-${tpl.id}`} />
@@ -137,8 +131,8 @@ export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl,
               <label className="wcm-label">Business name</label>
               <input
                 className="wcm-input"
-                value={name}
-                onChange={e => setName(e.target.value)}
+                value={s.name}
+                onChange={e => set('name', e.target.value)}
                 placeholder="e.g. ελιά"
               />
             </div>
@@ -147,8 +141,8 @@ export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl,
               <label className="wcm-label">Tagline</label>
               <input
                 className="wcm-input"
-                value={tagline}
-                onChange={e => setTagline(e.target.value)}
+                value={s.tagline}
+                onChange={e => set('tagline', e.target.value)}
                 placeholder="Coffee · Brunch · Mini Market"
               />
             </div>
@@ -156,48 +150,26 @@ export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl,
             <div className="wcm-field-group">
               <label className="wcm-label">Accent colour</label>
               <div className="wcm-color-row">
-                <input
-                  type="color"
-                  className="wcm-color-picker"
-                  value={accentColor}
-                  onChange={e => setAccentColor(e.target.value)}
-                />
-                <span className="wcm-color-hex">{accentColor.toUpperCase()}</span>
-                <button
-                  className="wcm-color-reset"
-                  onClick={() => setAccentColor(DEFAULT_ACCENTS[template] || '#333333')}
-                  title="Reset colour"
-                >
-                  Reset
-                </button>
+                <input type="color" className="wcm-color-picker" value={s.accentColor} onChange={e => set('accentColor', e.target.value)} />
+                <span className="wcm-color-hex">{s.accentColor.toUpperCase()}</span>
+                <button className="wcm-color-reset" onClick={() => set('accentColor', DEFAULT_ACCENTS[s.template] || '#333333')}>Reset</button>
               </div>
             </div>
 
             <div className="wcm-field-group">
               <label className="wcm-label">Background colour</label>
               <div className="wcm-color-row">
-                <input
-                  type="color"
-                  className="wcm-color-picker"
-                  value={bgColor}
-                  onChange={e => setBgColor(e.target.value)}
-                />
-                <span className="wcm-color-hex">{bgColor.toUpperCase()}</span>
-                <button
-                  className="wcm-color-reset"
-                  onClick={() => setBgColor(DEFAULT_BGS[template] || '#ffffff')}
-                  title="Reset background"
-                >
-                  Reset
-                </button>
+                <input type="color" className="wcm-color-picker" value={s.bgColor} onChange={e => set('bgColor', e.target.value)} />
+                <span className="wcm-color-hex">{s.bgColor.toUpperCase()}</span>
+                <button className="wcm-color-reset" onClick={() => set('bgColor', DEFAULT_BGS[s.template] || '#ffffff')}>Reset</button>
               </div>
             </div>
 
             <div className="wcm-field-group">
               <label className="wcm-label">Language</label>
               <div className="wcm-lang-toggle">
-                <button className={`wcm-lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>EN</button>
-                <button className={`wcm-lang-btn ${lang === 'el' ? 'active' : ''}`} onClick={() => setLang('el')}>ΕΛ</button>
+                <button className={`wcm-lang-btn ${s.lang === 'en' ? 'active' : ''}`} onClick={() => set('lang', 'en')}>EN</button>
+                <button className={`wcm-lang-btn ${s.lang === 'el' ? 'active' : ''}`} onClick={() => set('lang', 'el')}>ΕΛ</button>
               </div>
             </div>
 

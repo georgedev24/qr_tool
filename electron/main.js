@@ -6,6 +6,28 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
 let win = null
 
+// Enforce single instance; hand off the file arg to the running instance
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) {
+  app.quit()
+}
+app.on('second-instance', (event, argv) => {
+  const file = findQrprojArg(isDev ? argv.slice(2) : argv.slice(1))
+  if (file) sendOpenFile(file)
+  if (win) { if (win.isMinimized()) win.restore(); win.focus() }
+})
+
+function findQrprojArg(args) {
+  return args.find(a => a.endsWith('.qrproj') && fs.existsSync(a)) || null
+}
+
+function sendOpenFile(filePath) {
+  try {
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'))
+    win?.webContents.send('open-file', { data, filePath })
+  } catch {}
+}
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1100,
@@ -26,6 +48,12 @@ function createWindow() {
   } else {
     win.loadFile(path.join(__dirname, '../dist/index.html'))
   }
+
+  // Open file passed via file association on launch
+  win.webContents.once('did-finish-load', () => {
+    const fileArg = findQrprojArg(isDev ? process.argv.slice(2) : process.argv.slice(1))
+    if (fileArg) sendOpenFile(fileArg)
+  })
 
   // Intercept window close to allow renderer to handle unsaved changes
   win.on('close', (e) => {

@@ -51,4 +51,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('menu-save-as', handler)
     return () => ipcRenderer.removeListener('menu-save-as', handler)
   },
+  onFileOpen: (cb) => {
+    const handler = (event, payload) => cb(payload)
+    ipcRenderer.on('open-file', handler)
+    return () => ipcRenderer.removeListener('open-file', handler)
+  },
 })

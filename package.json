@@ -46,6 +46,15 @@
       "electron/**/*",
       "node_modules/**/*"
     ],
+    "fileAssociations": [
+      {
+        "ext": "qrproj",
+        "name": "QR Project",
+        "description": "QR Tool Project File",
+        "role": "Editor",
+        "icon": "public/icon.ico"
+      }
+    ],
     "publish": {
       "provider": "github",
       "owner": "georgedev24",

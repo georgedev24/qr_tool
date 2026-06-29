@@ -3,37 +3,19 @@ import QRCodeStyling from 'qr-code-styling'
 import TypePanel from './components/TypePanel'
 import StylePanel from './components/StylePanel'
 import ExportBar from './components/ExportBar'
-import WifiCardModal from './components/WifiCardModal'
+import WifiCardModal, { DEFAULT_CARD_SETTINGS } from './components/WifiCardModal'
 import { buildQrData } from './lib/qrData'
 import './styles/app.css'
 
 const DEFAULT_STYLE = {
   width: 1024,
   height: 1024,
-  dotsOptions: {
-    type: 'square',
-    color: '#1a1a1a',
-    gradient: null,
-  },
-  backgroundOptions: {
-    color: '#ffffff',
-  },
-  cornersSquareOptions: {
-    type: 'square',
-    color: '#1a1a1a',
-  },
-  cornersDotOptions: {
-    type: 'square',
-    color: '#1a1a1a',
-  },
-  imageOptions: {
-    crossOrigin: 'anonymous',
-    margin: 6,
-    imageSize: 0.25,
-  },
-  qrOptions: {
-    errorCorrectionLevel: 'H',
-  },
+  dotsOptions:        { type: 'square', color: '#1a1a1a', gradient: null },
+  backgroundOptions:  { color: '#ffffff' },
+  cornersSquareOptions: { type: 'square', color: '#1a1a1a' },
+  cornersDotOptions:  { type: 'square', color: '#1a1a1a' },
+  imageOptions:       { crossOrigin: 'anonymous', margin: 6, imageSize: 0.25 },
+  qrOptions:          { errorCorrectionLevel: 'H' },
 }
 
 const QR_TYPES = [
@@ -65,42 +47,48 @@ const DEFAULT_DATA = {
 const baseName = (p) => p.replace(/\\/g, '/').split('/').pop()
 
 export default function App() {
-  const [activeType, setActiveType] = useState('wifi')
-  const [formData, setFormData] = useState(DEFAULT_DATA)
-  const [style, setStyle] = useState(DEFAULT_STYLE)
+  const [activeType, setActiveType]   = useState('wifi')
+  const [formData, setFormData]       = useState(DEFAULT_DATA)
+  const [style, setStyle]             = useState(DEFAULT_STYLE)
   const [logoDataUrl, setLogoDataUrl] = useState(null)
-  const [previewSize] = useState(220)
+  const [cardSettings, setCardSettings] = useState(DEFAULT_CARD_SETTINGS)
   const [showCardModal, setShowCardModal] = useState(false)
   const [updateState, setUpdateState] = useState(null)
   const [projectPath, setProjectPath] = useState(null)
-  const [isDirty, setIsDirty] = useState(false)
+  const [isDirty, setIsDirty]         = useState(false)
 
-  const qrRef = useRef(null)
-  const qrInstance = useRef(null)
+  // renderedQrData: what's actually encoded in the preview QR (only updated on Generate)
+  const [renderedQrData, setRenderedQrData] = useState(' ')
 
-  // Refs for stable access inside event handlers
-  const activeTypeRef = useRef(activeType)
-  const formDataRef = useRef(formData)
-  const styleRef = useRef(style)
-  const logoDataUrlRef = useRef(logoDataUrl)
-  const projectPathRef = useRef(null)
-  const isDirtyRef = useRef(false)
-  const loadingRef = useRef(false)
-  const mountedRef = useRef(false)
+  const previewSize = 220
+  const qrRef       = useRef(null)
+  const qrInstance  = useRef(null)
 
-  useEffect(() => { activeTypeRef.current = activeType }, [activeType])
-  useEffect(() => { formDataRef.current = formData }, [formData])
-  useEffect(() => { styleRef.current = style }, [style])
-  useEffect(() => { logoDataUrlRef.current = logoDataUrl }, [logoDataUrl])
-  useEffect(() => { projectPathRef.current = projectPath }, [projectPath])
-  useEffect(() => { isDirtyRef.current = isDirty }, [isDirty])
+  // Refs for stable access in event handlers
+  const activeTypeRef   = useRef(activeType)
+  const formDataRef     = useRef(formData)
+  const styleRef        = useRef(style)
+  const logoDataUrlRef  = useRef(logoDataUrl)
+  const cardSettingsRef = useRef(cardSettings)
+  const projectPathRef  = useRef(null)
+  const isDirtyRef      = useRef(false)
+  const loadingRef      = useRef(false)
+  const mountedRef      = useRef(false)
 
-  // Dirty tracking  -  skip initial render and project loads
+  useEffect(() => { activeTypeRef.current = activeType },     [activeType])
+  useEffect(() => { formDataRef.current = formData },         [formData])
+  useEffect(() => { styleRef.current = style },               [style])
+  useEffect(() => { logoDataUrlRef.current = logoDataUrl },   [logoDataUrl])
+  useEffect(() => { cardSettingsRef.current = cardSettings }, [cardSettings])
+  useEffect(() => { projectPathRef.current = projectPath },   [projectPath])
+  useEffect(() => { isDirtyRef.current = isDirty },           [isDirty])
+
+  // Mark dirty on any project-state change (skip initial render and loads)
   useEffect(() => {
     if (!mountedRef.current) { mountedRef.current = true; return }
     if (loadingRef.current) return
     setIsDirty(true)
-  }, [activeType, formData, style, logoDataUrl])
+  }, [activeType, formData, style, logoDataUrl, cardSettings])
 
   // Window title
   useEffect(() => {
@@ -109,14 +97,13 @@ export default function App() {
     window.electronAPI.setTitle(`${name}${isDirty ? ' ●' : ''}  -  QR Tool`)
   }, [projectPath, isDirty])
 
-  const qrData = buildQrData(activeType, formData[activeType])
-
+  // --- QR preview init ---
   useEffect(() => {
     qrInstance.current = new QRCodeStyling({
-      ...style,
+      ...DEFAULT_STYLE,
       width: previewSize,
       height: previewSize,
-      data: qrData || ' ',
+      data: ' ',
     })
     if (qrRef.current) {
       qrRef.current.innerHTML = ''
@@ -124,16 +111,21 @@ export default function App() {
     }
   }, [])
 
+  // Update preview when renderedQrData or style changes
   useEffect(() => {
     if (!qrInstance.current) return
     qrInstance.current.update({
       ...style,
       width: previewSize,
       height: previewSize,
-      data: qrData || ' ',
+      data: renderedQrData || ' ',
       image: logoDataUrl || undefined,
     })
-  }, [style, qrData, logoDataUrl, previewSize])
+  }, [style, renderedQrData, logoDataUrl])
+
+  const handleGenerate = () => {
+    setRenderedQrData(buildQrData(activeType, formData[activeType]) || ' ')
+  }
 
   // Auto-updater
   useEffect(() => {
@@ -145,11 +137,12 @@ export default function App() {
 
   // --- Project helpers ---
   const getProjectData = () => ({
-    version: '1',
-    activeType: activeTypeRef.current,
-    formData: formDataRef.current,
-    style: styleRef.current,
-    logoDataUrl: logoDataUrlRef.current,
+    version:      '1',
+    activeType:   activeTypeRef.current,
+    formData:     formDataRef.current,
+    style:        styleRef.current,
+    logoDataUrl:  logoDataUrlRef.current,
+    cardSettings: cardSettingsRef.current,
   })
 
   const doSave = async (saveAs = false) => {
@@ -172,28 +165,29 @@ export default function App() {
     setFormData(data.formData || DEFAULT_DATA)
     setStyle(data.style || DEFAULT_STYLE)
     setLogoDataUrl(data.logoDataUrl || null)
+    setCardSettings(data.cardSettings || DEFAULT_CARD_SETTINGS)
     setProjectPath(filePath)
     setIsDirty(false)
     projectPathRef.current = filePath
     isDirtyRef.current = false
+    // Auto-generate QR for the loaded data
+    const built = buildQrData(data.activeType || 'wifi', (data.formData || DEFAULT_DATA)[data.activeType || 'wifi'])
+    setRenderedQrData(built || ' ')
     requestAnimationFrame(() => { loadingRef.current = false })
   }
 
   const confirmAndProceed = async () => {
     if (!isDirtyRef.current) return true
     const response = await window.electronAPI.confirmUnsaved()
-    if (response === 0) { // Save
-      const saved = await doSave()
-      return saved
-    }
-    if (response === 1) return true // Don't Save
-    return false // Cancel
+    if (response === 0) { const saved = await doSave(); return saved }
+    if (response === 1) return true
+    return false
   }
 
-  // Ref-stable handlers for menu and close events
-  const handleNewRef = useRef(null)
-  const handleOpenRef = useRef(null)
-  const handleSaveRef = useRef(null)
+  // Ref-stable menu/close handlers
+  const handleNewRef    = useRef(null)
+  const handleOpenRef   = useRef(null)
+  const handleSaveRef   = useRef(null)
   const handleSaveAsRef = useRef(null)
 
   handleNewRef.current = async () => {
@@ -204,8 +198,10 @@ export default function App() {
     setFormData(DEFAULT_DATA)
     setStyle(DEFAULT_STYLE)
     setLogoDataUrl(null)
+    setCardSettings(DEFAULT_CARD_SETTINGS)
     setProjectPath(null)
     setIsDirty(false)
+    setRenderedQrData(' ')
     projectPathRef.current = null
     isDirtyRef.current = false
     requestAnimationFrame(() => { loadingRef.current = false })
@@ -218,42 +214,48 @@ export default function App() {
     if (result) doLoad(result.data, result.filePath)
   }
 
-  handleSaveRef.current = () => doSave(false)
+  handleSaveRef.current   = () => doSave(false)
   handleSaveAsRef.current = () => doSave(true)
 
   // Menu event listeners
   useEffect(() => {
     if (!window.electronAPI) return
     const offs = [
-      window.electronAPI.onMenuNew(() => handleNewRef.current?.()),
-      window.electronAPI.onMenuOpen(() => handleOpenRef.current?.()),
-      window.electronAPI.onMenuSave(() => handleSaveRef.current?.()),
-      window.electronAPI.onMenuSaveAs(() => handleSaveAsRef.current?.()),
+      window.electronAPI.onMenuNew(    () => handleNewRef.current?.()),
+      window.electronAPI.onMenuOpen(   () => handleOpenRef.current?.()),
+      window.electronAPI.onMenuSave(   () => handleSaveRef.current?.()),
+      window.electronAPI.onMenuSaveAs( () => handleSaveAsRef.current?.()),
     ]
     return () => offs.forEach(off => off?.())
   }, [])
 
-  // Window close (unsaved changes guard)
+  // Window close guard
   useEffect(() => {
     if (!window.electronAPI) return
     const off = window.electronAPI.onCloseRequested(async () => {
       if (!isDirtyRef.current) { window.electronAPI.forceQuit(); return }
       const response = await window.electronAPI.confirmUnsaved()
-      if (response === 0) {
-        const saved = await doSave()
-        if (saved) window.electronAPI.forceQuit()
-      } else if (response === 1) {
-        window.electronAPI.forceQuit()
+      if (response === 0) { const saved = await doSave(); if (saved) window.electronAPI.forceQuit() }
+      else if (response === 1) { window.electronAPI.forceQuit() }
+    })
+    return () => off?.()
+  }, [])
+
+  // Open file via file association
+  useEffect(() => {
+    if (!window.electronAPI) return
+    const off = window.electronAPI.onFileOpen(async ({ data, filePath }) => {
+      if (isDirtyRef.current) {
+        const proceed = await confirmAndProceed()
+        if (!proceed) return
       }
+      doLoad(data, filePath)
     })
     return () => off?.()
   }, [])
 
   const handleDataChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [activeType]: { ...prev[activeType], [field]: value },
-    }))
+    setFormData(prev => ({ ...prev, [activeType]: { ...prev[activeType], [field]: value } }))
   }
 
   const handleStyleChange = (path, value) => {
@@ -268,15 +270,12 @@ export default function App() {
   }
 
   const handleExport = async (format) => {
-    if (format === 'print-card') {
-      setShowCardModal(true)
-      return
-    }
+    if (format === 'print-card') { setShowCardModal(true); return }
 
     if (!qrInstance.current) return
     const exportQr = new QRCodeStyling({
       ...style,
-      data: qrData || ' ',
+      data: renderedQrData || ' ',
       image: logoDataUrl || undefined,
     })
 
@@ -284,27 +283,17 @@ export default function App() {
       const blob = await exportQr.getRawData('svg')
       const buf = await blob.arrayBuffer()
       if (window.electronAPI) {
-        await window.electronAPI.saveFile({
-          buffer: Array.from(new Uint8Array(buf)),
-          defaultName: 'qr-code.svg',
-          filters: [{ name: 'SVG', extensions: ['svg'] }],
-        })
+        await window.electronAPI.saveFile({ buffer: Array.from(new Uint8Array(buf)), defaultName: 'qr-code.svg', filters: [{ name: 'SVG', extensions: ['svg'] }] })
       } else {
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a'); a.href = url; a.download = 'qr-code.svg'; a.click()
+        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'qr-code.svg'; a.click()
       }
     } else if (format === 'png') {
       const blob = await exportQr.getRawData('png')
       const buf = await blob.arrayBuffer()
       if (window.electronAPI) {
-        await window.electronAPI.saveFile({
-          buffer: Array.from(new Uint8Array(buf)),
-          defaultName: 'qr-code.png',
-          filters: [{ name: 'PNG', extensions: ['png'] }],
-        })
+        await window.electronAPI.saveFile({ buffer: Array.from(new Uint8Array(buf)), defaultName: 'qr-code.png', filters: [{ name: 'PNG', extensions: ['png'] }] })
       } else {
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a'); a.href = url; a.download = 'qr-code.png'; a.click()
+        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'qr-code.png'; a.click()
       }
     } else if (format === 'copy') {
       const blob = await exportQr.getRawData('png')
@@ -316,16 +305,12 @@ export default function App() {
     <div className="app-shell">
       {updateState === 'downloaded' && (
         <div className="update-banner update-banner-ready">
-          Update ready to install  -
-          <button onClick={() => window.electronAPI?.restartAndInstall()}>
-            Restart &amp; Install
-          </button>
+          Update ready to install -
+          <button onClick={() => window.electronAPI?.restartAndInstall()}>Restart &amp; Install</button>
         </div>
       )}
       {updateState === 'available' && (
-        <div className="update-banner update-banner-dl">
-          Downloading update…
-        </div>
+        <div className="update-banner update-banner-dl">Downloading update…</div>
       )}
 
       <div className="app-body">
@@ -345,6 +330,9 @@ export default function App() {
               <span className="qr-type-badge">{QR_TYPES.find(t => t.id === activeType)?.label}</span>
               <span className="qr-size-info">{style.width} × {style.height} px</span>
             </div>
+            <button className="qr-generate-btn" onClick={handleGenerate}>
+              Generate QR
+            </button>
           </div>
         </div>
         <StylePanel
@@ -363,7 +351,9 @@ export default function App() {
           wifiData={formData.wifi}
           qrStyle={style}
           logoDataUrl={logoDataUrl}
-          qrData={qrData}
+          qrData={buildQrData('wifi', formData.wifi)}
+          settings={cardSettings}
+          onSettingsChange={setCardSettings}
         />
       )}
     </div>
