@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require('electron')
 const path = require('path')
 const fs = require('fs')
 
@@ -30,6 +30,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow()
+  buildMenu()
 
   if (!isDev) {
     const { autoUpdater } = require('electron-updater')
@@ -47,6 +48,69 @@ app.whenReady().then(() => {
     autoUpdater.checkForUpdates().catch(() => {})
   }
 })
+
+function buildMenu() {
+  const checkForUpdates = {
+    label: 'Check for Updates…',
+    click: async () => {
+      if (isDev) {
+        dialog.showMessageBox(win, {
+          type: 'info',
+          title: 'Updates',
+          message: 'Update checks are disabled in development mode.',
+        })
+        return
+      }
+      const { autoUpdater } = require('electron-updater')
+      try {
+        const result = await autoUpdater.checkForUpdates()
+        if (!result?.updateInfo) throw new Error('No response')
+        const current = app.getVersion()
+        const latest = result.updateInfo.version
+        if (latest === current) {
+          dialog.showMessageBox(win, {
+            type: 'info',
+            title: 'Up to date',
+            message: `You're on the latest version (${current}).`,
+          })
+        }
+        // If an update is available, the download starts automatically
+        // and the in-app banner will appear
+      } catch {
+        dialog.showMessageBox(win, {
+          type: 'error',
+          title: 'Update check failed',
+          message: 'Could not reach the update server. Check your internet connection.',
+        })
+      }
+    },
+  }
+
+  const template = [
+    {
+      label: 'File',
+      submenu: [
+        checkForUpdates,
+        { type: 'separator' },
+        { role: 'quit', label: 'Exit' },
+      ],
+    },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: `QR Tool v${app.getVersion()}`,
+          enabled: false,
+        },
+      ],
+    },
+  ]
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
