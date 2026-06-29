@@ -1,6 +1,6 @@
 {
   "name": "qr-tool",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "QR code generator with full visual customization",
   "main": "electron/main.js",
   "scripts": {
@@ -49,7 +49,8 @@
     "publish": {
       "provider": "github",
       "owner": "georgedev24",
-      "repo": "qr_tool"
+      "repo": "qr_tool",
+      "releaseType": "release"
     }
   }
 }
