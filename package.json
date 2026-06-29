@@ -1,0 +1,47 @@
+{
+  "name": "qr-tool",
+  "version": "1.0.0",
+  "description": "QR code generator with full visual customization",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && electron-builder",
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "vite build && electron-builder"
+  },
+  "keywords": [],
+  "author": "georgedev24",
+  "license": "MIT",
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "electron": "^33.4.5",
+    "electron-builder": "^25.1.8",
+    "vite": "^6.0.7",
+    "vite-plugin-electron": "^0.29.0",
+    "wait-on": "^8.0.3"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.0",
+    "jspdf": "^2.5.2",
+    "qr-code-styling": "^1.9.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "build": {
+    "appId": "com.georgedev24.qr-tool",
+    "productName": "QR Tool",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "public/icon.ico"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ]
+  }
+}
