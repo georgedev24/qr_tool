@@ -57,25 +57,31 @@
 /* --- Preview --- */
 .wcm-preview-wrap {
   flex-shrink: 0;
-  width: 300px;
   background: #2a2a2a;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  overflow: hidden;
 }
 
-/* Card is 148mm × 210mm. At 96dpi = 560 × 794px.
-   We show at ~50% scale → 280 × 397 display. */
+/* Hard clip to the scaled card size so nothing bleeds out */
+/* Card: 148mm × 210mm → at 96dpi = 560 × 794px → scale(0.5) = 280 × 397 */
+.wcm-iframe-clip {
+  width: 280px;
+  height: 397px;
+  overflow: hidden;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
 .wcm-iframe {
   width: 560px;
   height: 794px;
   border: none;
-  border-radius: 4px;
   transform: scale(0.5);
   transform-origin: top left;
   pointer-events: none;
+  display: block;
 }
 
 /* --- Fields --- */
@@ -150,6 +156,78 @@
 .wcm-color-reset:hover {
   border-color: var(--accent);
   color: var(--accent-text);
+}
+
+.wcm-template-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.wcm-tpl-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.1s;
+  text-align: left;
+}
+.wcm-tpl-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.wcm-tpl-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.wcm-tpl-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.wcm-tpl-swatch-elegant { background: linear-gradient(135deg, #1A1810 50%, #C8972A 50%); }
+.wcm-tpl-swatch-clean   { background: linear-gradient(135deg, #2563eb 50%, #ffffff 50%); border: 1px solid #e2e2e2; }
+.wcm-tpl-swatch-bold    { background: #1a1a2e; }
+.wcm-tpl-swatch-minimal { background: #ffffff; border: 1px solid #d0d0d0; }
+
+.wcm-lang-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.wcm-lang-btn {
+  padding: 5px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: all 0.1s;
+}
+
+.wcm-lang-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.wcm-lang-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
 }
 
 .wcm-network-info {

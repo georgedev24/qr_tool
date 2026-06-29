@@ -1,16 +1,36 @@
 import { useState, useEffect, useRef } from 'react'
 import QRCodeStyling from 'qr-code-styling'
-import { generateWifiCardHtml } from '../lib/wifiCardTemplate'
+import { generateWifiCardHtml, TEMPLATES } from '../lib/wifiCardTemplate'
 import './WifiCardModal.css'
 
+const DEFAULT_ACCENTS = {
+  elegant: '#C8972A',
+  clean:   '#2563eb',
+  bold:    '#1a1a2e',
+  minimal: '#111111',
+}
+
+const DEFAULT_BGS = {
+  elegant: '#1A1810',
+  clean:   '#ffffff',
+  bold:    '#1a1a2e',
+  minimal: '#ffffff',
+}
+
 export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl, qrData }) {
-  const [name, setName] = useState('')
-  const [tagline, setTagline] = useState('')
-  const [accentColor, setAccentColor] = useState('#C8972A')
-  const [qrDataUrl, setQrDataUrl] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [template, setTemplate]     = useState('elegant')
+  const [name, setName]             = useState('')
+  const [tagline, setTagline]       = useState('')
+  const [accentColor, setAccentColor] = useState(DEFAULT_ACCENTS.elegant)
+  const [bgColor, setBgColor]       = useState(DEFAULT_BGS.elegant)
+  const [lang, setLang]             = useState('en')
+  const [qrDataUrl, setQrDataUrl]   = useState('')
+  const [saving, setSaving]         = useState(false)
   const iframeRef = useRef(null)
 
+  const currentTpl = TEMPLATES.find(t => t.id === template) || TEMPLATES[0]
+
+  // Regenerate QR whenever template changes (different bg colour) or qrData changes
   useEffect(() => {
     let cancelled = false
     async function genQr() {
@@ -21,7 +41,7 @@ export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl,
         height: 416,
         data: qrData,
         image: logoDataUrl || undefined,
-        backgroundOptions: { color: '#F4EDD8' },
+        backgroundOptions: { color: currentTpl.qrBg },
       })
       const blob = await qr.getRawData('svg')
       if (cancelled) return
@@ -31,14 +51,24 @@ export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl,
     }
     genQr()
     return () => { cancelled = true }
-  }, [qrData, qrStyle, logoDataUrl])
+  }, [qrData, qrStyle, logoDataUrl, template])
+
+  // Reset accent colour to a sensible default when switching templates
+  const handleTemplateChange = (id) => {
+    setTemplate(id)
+    setAccentColor(DEFAULT_ACCENTS[id] || '#333333')
+    setBgColor(DEFAULT_BGS[id] || '#ffffff')
+  }
 
   const html = generateWifiCardHtml({
+    template,
     name,
     tagline,
     networkName: wifiData?.ssid || '',
     accentColor,
+    bgColor,
     qrDataUrl,
+    lang,
   })
 
   useEffect(() => {
@@ -74,15 +104,35 @@ export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl,
 
         <div className="wcm-body">
           <div className="wcm-preview-wrap">
-            <iframe
-              ref={iframeRef}
-              className="wcm-iframe"
-              title="Card Preview"
-              sandbox="allow-same-origin"
-            />
+            <div className="wcm-iframe-clip">
+              <iframe
+                ref={iframeRef}
+                className="wcm-iframe"
+                title="Card Preview"
+                sandbox="allow-same-origin"
+              />
+            </div>
           </div>
 
           <div className="wcm-fields">
+
+            {/* Template picker */}
+            <div className="wcm-field-group">
+              <label className="wcm-label">Template</label>
+              <div className="wcm-template-grid">
+                {TEMPLATES.map(tpl => (
+                  <button
+                    key={tpl.id}
+                    className={`wcm-tpl-btn ${template === tpl.id ? 'active' : ''}`}
+                    onClick={() => handleTemplateChange(tpl.id)}
+                  >
+                    <span className={`wcm-tpl-swatch wcm-tpl-swatch-${tpl.id}`} />
+                    {tpl.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="wcm-field-group">
               <label className="wcm-label">Business name</label>
               <input
@@ -115,11 +165,39 @@ export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl,
                 <span className="wcm-color-hex">{accentColor.toUpperCase()}</span>
                 <button
                   className="wcm-color-reset"
-                  onClick={() => setAccentColor('#C8972A')}
-                  title="Reset to gold"
+                  onClick={() => setAccentColor(DEFAULT_ACCENTS[template] || '#333333')}
+                  title="Reset colour"
                 >
                   Reset
                 </button>
+              </div>
+            </div>
+
+            <div className="wcm-field-group">
+              <label className="wcm-label">Background colour</label>
+              <div className="wcm-color-row">
+                <input
+                  type="color"
+                  className="wcm-color-picker"
+                  value={bgColor}
+                  onChange={e => setBgColor(e.target.value)}
+                />
+                <span className="wcm-color-hex">{bgColor.toUpperCase()}</span>
+                <button
+                  className="wcm-color-reset"
+                  onClick={() => setBgColor(DEFAULT_BGS[template] || '#ffffff')}
+                  title="Reset background"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            <div className="wcm-field-group">
+              <label className="wcm-label">Language</label>
+              <div className="wcm-lang-toggle">
+                <button className={`wcm-lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>EN</button>
+                <button className={`wcm-lang-btn ${lang === 'el' ? 'active' : ''}`} onClick={() => setLang('el')}>ΕΛ</button>
               </div>
             </div>
 
@@ -136,6 +214,7 @@ export default function WifiCardModal({ onClose, wifiData, qrStyle, logoDataUrl,
               </button>
               <p className="wcm-hint">A5 (148 × 210 mm)  -  print-ready</p>
             </div>
+
           </div>
         </div>
       </div>

@@ -87,32 +87,38 @@ ipcMain.handle('restart-and-install', () => {
 // --- WiFi card PDF ---
 ipcMain.handle('print-to-pdf', async (event, { html }) => {
   const tempPath = path.join(app.getPath('temp'), `wifi-card-${Date.now()}.html`)
+  let pdfWin = null
 
   try {
     fs.writeFileSync(tempPath, html, 'utf8')
 
-    const pdfWin = new BrowserWindow({
+    pdfWin = new BrowserWindow({
       show: false,
+      width: 600,
+      height: 900,
       webPreferences: { contextIsolation: true },
     })
 
     await pdfWin.loadFile(tempPath)
 
-    // Wait for web fonts to finish loading before printing
-    await pdfWin.webContents.executeJavaScript('document.fonts.ready')
+    // Wait for fonts then give the renderer a beat to paint
+    await pdfWin.webContents.executeJavaScript(
+      'new Promise(r => document.fonts.ready.then(() => setTimeout(r, 600)))'
+    )
 
     const pdfBuffer = await pdfWin.webContents.printToPDF({
-      pageSize: { width: 148000, height: 210000 }, // microns: 148mm × 210mm
+      pageSize: 'A5',       // 148 × 210 mm
       printBackground: true,
-      margins: { marginType: 'none' },
+      landscape: false,
+      marginsType: 1,       // 1 = no margins
     })
 
-    pdfWin.destroy()
     return Array.from(pdfBuffer)
   } catch (err) {
     console.error('print-to-pdf error:', err)
     return null
   } finally {
+    try { pdfWin?.destroy() } catch {}
     try { fs.unlinkSync(tempPath) } catch {}
   }
 })
