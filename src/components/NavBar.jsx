@@ -1,6 +1,44 @@
 import { useState, useEffect, useRef } from 'react'
 import './NavBar.css'
 
+// ── Flyout submenu item ───────────────────────────────────────────────────────
+function SubMenu({ item, onRootClose }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  return (
+    <div
+      className="nm-item nm-item--has-sub"
+      ref={ref}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <span className="nm-item-label">{item.label}</span>
+      <span className="nm-arrow">›</span>
+      {open && (
+        <div className="nm-subdropdown">
+          {item.submenu.map((sub, j) =>
+            sub.separator ? (
+              <div key={j} className="nm-sep" />
+            ) : (
+              <button
+                key={j}
+                className="nm-item"
+                disabled={sub.disabled}
+                title={sub.title || ''}
+                onClick={() => { if (!sub.disabled) { onRootClose(); sub.action?.() } }}
+              >
+                <span className="nm-item-label">{sub.label}</span>
+              </button>
+            )
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Dropdown menu ─────────────────────────────────────────────────────────────
 function NavMenu({ label, items, isOpen, onToggle, onClose }) {
   const wrapRef = useRef(null)
 
@@ -20,10 +58,10 @@ function NavMenu({ label, items, isOpen, onToggle, onClose }) {
       </button>
       {isOpen && (
         <div className="nm-dropdown">
-          {items.map((item, i) =>
-            item.separator ? (
-              <div key={i} className="nm-sep" />
-            ) : (
+          {items.map((item, i) => {
+            if (item.separator) return <div key={i} className="nm-sep" />
+            if (item.submenu)   return <SubMenu key={i} item={item} onRootClose={onClose} />
+            return (
               <button
                 key={i}
                 className="nm-item"
@@ -34,38 +72,58 @@ function NavMenu({ label, items, isOpen, onToggle, onClose }) {
                 {item.shortcut && <span className="nm-shortcut">{item.shortcut}</span>}
               </button>
             )
-          )}
+          })}
         </div>
       )}
     </div>
   )
 }
 
+// ── NavBar ────────────────────────────────────────────────────────────────────
 export default function NavBar({
   projectName, isDirty,
   canUndo, canRedo,
   activeType,
-  onNew, onOpen, onSave, onSaveAs,
+  recentFiles,
+  onNew, onOpen, onSave, onSaveAs, onOpenRecent, onClearRecent,
   onUndo, onRedo,
   onGenerate,
   onExport,
   onPatchNotes,
   onCheckUpdates,
+  onSettings,
+  onAbout,
   onExit,
 }) {
   const [openMenu, setOpenMenu] = useState(null)
   const toggle = (name) => setOpenMenu(prev => prev === name ? null : name)
   const close = () => setOpenMenu(null)
 
+  const recentSubmenu = recentFiles && recentFiles.length > 0
+    ? [
+        ...recentFiles.map(fp => ({
+          label: fp.replace(/\\/g, '/').split('/').pop(),
+          title: fp,
+          action: () => onOpenRecent?.(fp),
+        })),
+        { separator: true },
+        { label: 'Clear Recent', action: onClearRecent },
+      ]
+    : [{ label: 'No recent projects', disabled: true }]
+
   const FILE_ITEMS = [
-    { label: 'New Project',       shortcut: 'Ctrl+N',       action: onNew },
+    { label: 'New Project',      shortcut: 'Ctrl+N',       action: onNew },
     { separator: true },
-    { label: 'Open Project…',     shortcut: 'Ctrl+O',       action: onOpen },
-    { label: 'Save Project',      shortcut: 'Ctrl+S',       action: onSave },
-    { label: 'Save Project As…',  shortcut: 'Ctrl+Shift+S', action: onSaveAs },
+    { label: 'Open Project…',    shortcut: 'Ctrl+O',       action: onOpen },
+    { label: 'Recent Projects',  submenu: recentSubmenu },
+    { label: 'Save Project',     shortcut: 'Ctrl+S',       action: onSave },
+    { label: 'Save Project As…', shortcut: 'Ctrl+Shift+S', action: onSaveAs },
     { separator: true },
-    { label: 'Patch Notes',                                  action: onPatchNotes },
-    { label: 'Check for Updates…',                           action: onCheckUpdates },
+    { label: 'Settings',                                    action: onSettings },
+    { label: 'Patch Notes',                                 action: onPatchNotes },
+    { label: 'Check for Updates…',                          action: onCheckUpdates },
+    { separator: true },
+    { label: 'About QR Tool',                               action: onAbout },
     { separator: true },
     { label: 'Exit',                                         action: onExit },
   ]

@@ -1,0 +1,55 @@
+.status-bar {
+  height: 26px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  gap: 8px;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+
+.status-path {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+.status-dot {
+  color: #e05c5c;
+  font-size: 10px;
+}
+
+.status-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.status-type-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  border: 1px solid var(--border);
+}
+
+.status-right {
+  flex: 1;
+  text-align: right;
+  color: var(--text-hint);
+  font-size: 10px;
+}

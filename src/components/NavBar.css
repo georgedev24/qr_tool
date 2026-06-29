@@ -98,6 +98,41 @@
   margin: 4px 0;
 }
 
+/* ── Submenu (flyout) ── */
+.nm-item--has-sub {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 7px 10px 7px 14px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: default;
+  transition: background 0.08s;
+}
+.nm-item--has-sub:hover {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+}
+
+.nm-arrow {
+  font-size: 13px;
+  color: var(--text-hint);
+  line-height: 1;
+}
+
+.nm-subdropdown {
+  position: absolute;
+  top: -4px;
+  left: 100%;
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+  padding: 4px 0;
+  z-index: 600;
+}
+
 /* ── Center: project name ── */
 .navbar-center {
   flex: 1;

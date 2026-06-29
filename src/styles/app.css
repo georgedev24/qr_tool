@@ -21,6 +21,7 @@
   background-image: radial-gradient(circle, #ccc 1px, transparent 1px);
   background-size: 20px 20px;
   overflow: hidden;
+  position: relative;
 }
 
 .qr-preview-wrap {
@@ -56,6 +57,25 @@
   background: rgba(255,255,255,0.85);
   color: var(--text);
   border: 1px solid var(--border);
+}
+
+.preview-area--drag {
+  outline: 2px dashed var(--accent);
+  outline-offset: -6px;
+}
+
+.drag-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(37, 99, 235, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  pointer-events: none;
+  z-index: 10;
 }
 
 .qr-generate-btn {

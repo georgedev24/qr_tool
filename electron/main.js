@@ -6,6 +6,31 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
 let win = null
 
+// ── Simple persistent store ──────────────────────────────────────────────────
+let _storePath = null
+function getStorePath() {
+  if (!_storePath) _storePath = path.join(app.getPath('userData'), 'store.json')
+  return _storePath
+}
+function readStore() {
+  try { return JSON.parse(fs.readFileSync(getStorePath(), 'utf8')) } catch { return {} }
+}
+function writeStore(data) {
+  try { fs.writeFileSync(getStorePath(), JSON.stringify(data, null, 2), 'utf8') } catch {}
+}
+
+// Recent files helpers
+function getRecentFiles() { return readStore().recentFiles || [] }
+function addRecentFile(filePath) {
+  const list = getRecentFiles().filter(f => f !== filePath)
+  list.unshift(filePath)
+  writeStore({ ...readStore(), recentFiles: list.slice(0, 10) })
+  return list.slice(0, 10)
+}
+function clearRecentFiles() {
+  writeStore({ ...readStore(), recentFiles: [] })
+}
+
 // Enforce single instance; hand off the file arg to the running instance
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
@@ -153,6 +178,7 @@ ipcMain.handle('save-project', async (event, { data, filePath }) => {
     target = chosen
   }
   fs.writeFileSync(target, JSON.stringify(data, null, 2), 'utf8')
+  addRecentFile(target)
   return { success: true, filePath: target }
 })
 
@@ -165,12 +191,32 @@ ipcMain.handle('open-project', async () => {
   if (canceled || !filePaths.length) return null
   try {
     const raw = fs.readFileSync(filePaths[0], 'utf8')
+    addRecentFile(filePaths[0])
     return { data: JSON.parse(raw), filePath: filePaths[0] }
   } catch {
     dialog.showErrorBox('Invalid file', 'Could not read the project file.')
     return null
   }
 })
+
+// --- Recent files ---
+ipcMain.handle('get-recent-files', () => getRecentFiles())
+ipcMain.handle('add-recent-file', (event, filePath) => addRecentFile(filePath))
+ipcMain.handle('clear-recent-files', () => clearRecentFiles())
+ipcMain.handle('open-recent-file', async (event, filePath) => {
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8')
+    return { data: JSON.parse(raw), filePath }
+  } catch {
+    // File may have been moved/deleted
+    addRecentFile(filePath) // keep it but return null so UI can handle
+    dialog.showErrorBox('File not found', `Could not open:\n${filePath}`)
+    return null
+  }
+})
+
+// --- App version ---
+ipcMain.handle('get-version', () => app.getVersion())
 
 // --- Auto-updater ---
 ipcMain.handle('restart-and-install', () => {

@@ -1,0 +1,120 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 10px);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-box {
+  width: 420px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.sm-body {
+  padding: 8px 0;
+}
+
+.sm-section {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sm-section:last-child {
+  border-bottom: none;
+}
+
+.sm-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-hint);
+  margin-bottom: 10px;
+}
+
+.sm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.sm-row:last-child {
+  margin-bottom: 0;
+}
+
+.sm-label {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.sm-toggle-group {
+  display: flex;
+  gap: 4px;
+}
+
+.sm-toggle-btn {
+  padding: 5px 14px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 6px);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.sm-toggle-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.sm-toggle-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  font-weight: 600;
+}

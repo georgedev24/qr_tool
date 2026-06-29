@@ -11,6 +11,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   restartAndInstall: () => ipcRenderer.invoke('restart-and-install'),
   forceQuit: () => ipcRenderer.invoke('force-quit'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  getVersion: () => ipcRenderer.invoke('get-version'),
+  getRecentFiles: () => ipcRenderer.invoke('get-recent-files'),
+  addRecentFile: (filePath) => ipcRenderer.invoke('add-recent-file', filePath),
+  clearRecentFiles: () => ipcRenderer.invoke('clear-recent-files'),
+  openRecentFile: (filePath) => ipcRenderer.invoke('open-recent-file', filePath),
 
   setTitle: (title) => ipcRenderer.invoke('set-title', title),
   confirmUnsaved: () => ipcRenderer.invoke('confirm-unsaved'),
