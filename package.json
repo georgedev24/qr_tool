@@ -1,6 +1,6 @@
 {
   "name": "qr-tool",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "QR code generator with full visual customization",
   "main": "electron/main.js",
   "scripts": {

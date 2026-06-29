@@ -1,5 +1,21 @@
 export const PATCH_NOTES = [
   {
+    version: '1.4.0',
+    date: '2026-06-29',
+    changes: [
+      'Toast notifications  -  every action (save, export, copy, generate, logo change) now shows a non-blocking confirmation that fades out automatically',
+      'Recent Projects  -  File menu now tracks your last 10 opened/saved projects with a flyout submenu; click any entry to reopen it instantly',
+      'Light / Dark theme  -  toggle between Light and Dark in Settings; your choice is remembered between app restarts',
+      'Settings panel  -  centralised preferences: app theme, re-open last project on launch, and default export format (PNG / SVG / Copy)',
+      'About dialog  -  shows app version, tagline, and quick links to Patch Notes and Check for Updates',
+      'Status bar  -  slim strip at the bottom of the window showing your current project file, QR type, and the last action performed',
+      'Drag & drop logo  -  drag any image file directly onto the QR preview to set it as the logo; no file dialog needed',
+      'File > Recent Projects flyout  -  hover to see your project history; includes a Clear Recent option',
+      'Auto-open last project  -  when enabled in Settings, the app reopens your most recent project automatically on launch',
+      'Single-instance enforcement  -  opening a .qrproj file while the app is already running loads it in the existing window instead of opening a second one',
+    ],
+  },
+  {
     version: '1.3.0',
     date: '2026-06-29',
     changes: [
