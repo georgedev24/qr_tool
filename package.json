@@ -8,7 +8,8 @@
     "build": "vite build && electron-builder",
     "preview": "vite preview",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "vite build && electron-builder"
+    "electron:build": "vite build && electron-builder",
+    "release": "vite build && electron-builder --publish always"
   },
   "keywords": [],
   "author": "georgedev24",
@@ -24,6 +25,7 @@
   },
   "dependencies": {
     "electron-store": "^10.0.0",
+    "electron-updater": "^6.8.9",
     "jspdf": "^2.5.2",
     "qr-code-styling": "^1.9.2",
     "react": "^19.0.0",
@@ -43,6 +45,11 @@
       "dist/**/*",
       "electron/**/*",
       "node_modules/**/*"
-    ]
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "georgedev24",
+      "repo": "qr_tool"
+    }
   }
 }

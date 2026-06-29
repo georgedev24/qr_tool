@@ -3,6 +3,7 @@ import QRCodeStyling from 'qr-code-styling'
 import TypePanel from './components/TypePanel'
 import StylePanel from './components/StylePanel'
 import ExportBar from './components/ExportBar'
+import WifiCardModal from './components/WifiCardModal'
 import { buildQrData } from './lib/qrData'
 import './styles/app.css'
 
@@ -67,6 +68,8 @@ export default function App() {
   const [style, setStyle] = useState(DEFAULT_STYLE)
   const [logoDataUrl, setLogoDataUrl] = useState(null)
   const [previewSize, setPreviewSize] = useState(220)
+  const [showCardModal, setShowCardModal] = useState(false)
+  const [updateState, setUpdateState] = useState(null) // 'available' | 'downloaded'
 
   const qrRef = useRef(null)
   const qrInstance = useRef(null)
@@ -102,6 +105,13 @@ export default function App() {
     updateQr()
   }, [updateQr])
 
+  useEffect(() => {
+    if (!window.electronAPI) return
+    const offAvailable = window.electronAPI.onUpdateAvailable(() => setUpdateState('available'))
+    const offDownloaded = window.electronAPI.onUpdateDownloaded(() => setUpdateState('downloaded'))
+    return () => { offAvailable?.(); offDownloaded?.() }
+  }, [])
+
   const handleDataChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -121,6 +131,11 @@ export default function App() {
   }
 
   const handleExport = async (format) => {
+    if (format === 'print-card') {
+      setShowCardModal(true)
+      return
+    }
+
     if (!qrInstance.current) return
     const exportQr = new QRCodeStyling({
       ...style,
@@ -162,7 +177,21 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <div className="app-body">
+      {updateState === 'downloaded' && (
+        <div className="update-banner update-banner-ready">
+          Update ready to install  - 
+          <button onClick={() => window.electronAPI?.restartAndInstall()}>
+            Restart &amp; Install
+          </button>
+        </div>
+      )}
+      {updateState === 'available' && (
+        <div className="update-banner update-banner-dl">
+          Downloading update…
+        </div>
+      )}
+
+      <div className="app-body" ref={containerRef}>
         <TypePanel
           types={QR_TYPES}
           activeType={activeType}
@@ -170,7 +199,7 @@ export default function App() {
           formData={formData[activeType]}
           onDataChange={handleDataChange}
         />
-        <div className="preview-area" ref={containerRef}>
+        <div className="preview-area">
           <div className="qr-preview-wrap">
             <div className="qr-canvas-bg">
               <div ref={qrRef} />
@@ -188,7 +217,18 @@ export default function App() {
           onLogoChange={setLogoDataUrl}
         />
       </div>
-      <ExportBar onExport={handleExport} />
+
+      <ExportBar onExport={handleExport} activeType={activeType} />
+
+      {showCardModal && (
+        <WifiCardModal
+          onClose={() => setShowCardModal(false)}
+          wifiData={formData.wifi}
+          qrStyle={style}
+          logoDataUrl={logoDataUrl}
+          qrData={qrData}
+        />
+      )}
     </div>
   )
 }

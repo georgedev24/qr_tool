@@ -38,3 +38,15 @@
   border-color: var(--accent-text);
   color: white;
 }
+
+.export-btn-card {
+  background: #1a1710 !important;
+  color: #c8972a !important;
+  border-color: #c8972a !important;
+}
+
+.export-btn-card:hover {
+  background: #2a2318 !important;
+  color: #deb858 !important;
+  border-color: #deb858 !important;
+}
