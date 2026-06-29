@@ -41,7 +41,9 @@ function createWindow() {
       nodeIntegration: false,
     },
     backgroundColor: '#ffffff',
+    autoHideMenuBar: true,
   })
+  Menu.setApplicationMenu(null)
 
   if (isDev) {
     win.loadURL('http://localhost:5173')
@@ -64,7 +66,6 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow()
-  buildMenu()
 
   if (!isDev) {
     const { autoUpdater } = require('electron-updater')
@@ -83,53 +84,23 @@ app.whenReady().then(() => {
   }
 })
 
-function buildMenu() {
-  const checkForUpdates = {
-    label: 'Check for Updates…',
-    click: async () => {
-      if (isDev) {
-        dialog.showMessageBox(win, { type: 'info', title: 'Updates', message: 'Update checks are disabled in development mode.' })
-        return
-      }
-      const { autoUpdater } = require('electron-updater')
-      try {
-        const result = await autoUpdater.checkForUpdates()
-        if (!result?.updateInfo) throw new Error()
-        if (result.updateInfo.version === app.getVersion()) {
-          dialog.showMessageBox(win, { type: 'info', title: 'Up to date', message: `You're on the latest version (${app.getVersion()}).` })
-        }
-      } catch {
-        dialog.showMessageBox(win, { type: 'error', title: 'Update check failed', message: 'Could not reach the update server.' })
-      }
-    },
+// --- Check for updates (called from renderer navbar) ---
+ipcMain.handle('check-for-updates', async () => {
+  if (isDev) {
+    dialog.showMessageBox(win, { type: 'info', title: 'Updates', message: 'Update checks are disabled in development mode.' })
+    return
   }
-
-  const template = [
-    {
-      label: 'File',
-      submenu: [
-        { label: 'New Project',      accelerator: 'CmdOrCtrl+N',       click: () => win?.webContents.send('menu-new') },
-        { type: 'separator' },
-        { label: 'Open Project…',    accelerator: 'CmdOrCtrl+O',       click: () => win?.webContents.send('menu-open') },
-        { label: 'Save Project',     accelerator: 'CmdOrCtrl+S',       click: () => win?.webContents.send('menu-save') },
-        { label: 'Save Project As…', accelerator: 'CmdOrCtrl+Shift+S', click: () => win?.webContents.send('menu-save-as') },
-        { type: 'separator' },
-        checkForUpdates,
-        { type: 'separator' },
-        { role: 'quit', label: 'Exit' },
-      ],
-    },
-    { role: 'editMenu' },
-    { role: 'viewMenu' },
-    { role: 'windowMenu' },
-    {
-      label: 'Help',
-      submenu: [{ label: `QR Tool v${app.getVersion()}`, enabled: false }],
-    },
-  ]
-
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
-}
+  const { autoUpdater } = require('electron-updater')
+  try {
+    const result = await autoUpdater.checkForUpdates()
+    if (!result?.updateInfo) throw new Error()
+    if (result.updateInfo.version === app.getVersion()) {
+      dialog.showMessageBox(win, { type: 'info', title: 'Up to date', message: `You're on the latest version (${app.getVersion()}).` })
+    }
+  } catch {
+    dialog.showMessageBox(win, { type: 'error', title: 'Update check failed', message: 'Could not reach the update server.' })
+  }
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()

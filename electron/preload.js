@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   restartAndInstall: () => ipcRenderer.invoke('restart-and-install'),
   forceQuit: () => ipcRenderer.invoke('force-quit'),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
 
   setTitle: (title) => ipcRenderer.invoke('set-title', title),
   confirmUnsaved: () => ipcRenderer.invoke('confirm-unsaved'),
