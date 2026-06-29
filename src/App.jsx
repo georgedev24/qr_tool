@@ -111,20 +111,17 @@ export default function App() {
     }
   }, [])
 
-  // Update preview when renderedQrData or style changes
-  useEffect(() => {
+  const handleGenerate = () => {
     if (!qrInstance.current) return
+    const data = buildQrData(activeType, formData[activeType]) || ' '
+    setRenderedQrData(data)
     qrInstance.current.update({
-      ...style,
+      ...styleRef.current,
       width: previewSize,
       height: previewSize,
-      data: renderedQrData || ' ',
-      image: logoDataUrl || undefined,
+      data,
+      image: logoDataUrlRef.current || undefined,
     })
-  }, [style, renderedQrData, logoDataUrl])
-
-  const handleGenerate = () => {
-    setRenderedQrData(buildQrData(activeType, formData[activeType]) || ' ')
   }
 
   // Auto-updater
@@ -170,10 +167,22 @@ export default function App() {
     setIsDirty(false)
     projectPathRef.current = filePath
     isDirtyRef.current = false
-    // Auto-generate QR for the loaded data
-    const built = buildQrData(data.activeType || 'wifi', (data.formData || DEFAULT_DATA)[data.activeType || 'wifi'])
-    setRenderedQrData(built || ' ')
-    requestAnimationFrame(() => { loadingRef.current = false })
+    // Render QR immediately with loaded data + style
+    const builtStyle = data.style || DEFAULT_STYLE
+    const built = buildQrData(data.activeType || 'wifi', (data.formData || DEFAULT_DATA)[data.activeType || 'wifi']) || ' '
+    setRenderedQrData(built)
+    requestAnimationFrame(() => {
+      if (qrInstance.current) {
+        qrInstance.current.update({
+          ...builtStyle,
+          width: previewSize,
+          height: previewSize,
+          data: built,
+          image: data.logoDataUrl || undefined,
+        })
+      }
+      loadingRef.current = false
+    })
   }
 
   const confirmAndProceed = async () => {
