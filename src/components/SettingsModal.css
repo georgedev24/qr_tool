@@ -1,55 +1,5 @@
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius, 10px);
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.22);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
 .settings-box {
   width: 420px;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
-}
-
-.modal-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 13px;
-  padding: 2px 4px;
-  border-radius: 4px;
-  line-height: 1;
-}
-
-.modal-close:hover {
-  color: var(--text);
-  background: var(--surface-2);
 }
 
 .sm-body {

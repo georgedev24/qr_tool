@@ -1,4 +1,5 @@
 import { version } from '../../package.json';
+import '../styles/modal.css';
 import './AboutModal.css';
 
 export default function AboutModal({ onClose, onPatchNotes, onCheckUpdates }) {

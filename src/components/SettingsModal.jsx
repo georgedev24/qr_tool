@@ -1,3 +1,4 @@
+import '../styles/modal.css';
 import './SettingsModal.css';
 
 export default function SettingsModal({ settings, onSettingsChange, onClose }) {

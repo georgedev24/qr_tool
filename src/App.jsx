@@ -486,7 +486,7 @@ export default function App() {
         lastAction={lastAction}
       />
 
-      <ToastContainer toasts={toasts} onRemove={(id) => {}} />
+      <ToastContainer toasts={toasts} onRemove={toast.removeToast} />
 
       {showCardModal && (
         <WifiCardModal
